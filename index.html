@@ -3,531 +3,472 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>友善校園：ADHD 相處指南</title>
-    <!-- 引入 Tailwind CSS (用於樣式設計) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>不一樣的大腦：ADHD 互動宣導手冊</title>
+    
     <!-- 引入 React 和 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- 引入 Babel (讓瀏覽器看不懂的 JSX 語法轉為 JavaScript) -->
+    
+    <!-- 引入 Babel 用來解析 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
-        /* 自定義淡入動畫 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 1.125rem; /* 基本字體放大 */
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .animate-bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
+
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            70% { opacity: 1; transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
-        /* 隱藏滾動條但保留功能 */
+        
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
         }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        body {
-            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
-        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50 text-slate-800 overflow-x-hidden">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
-        // --- 圖示組件 (Inline SVG Icons) ---
-        // 為了讓單一檔案運作，我們將 Lucide 圖示直接定義在這裡
-        const IconBase = ({ children, className, ...props }) => (
-            <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className={className} 
-                {...props}
-            >
-                {children}
-            </svg>
+        // --- Lucide Icons as SVG Components ---
+        const IconBase = ({ children, className, size = 24, color = "currentColor" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
         );
 
-        const Shield = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></IconBase>;
-        const MessageCircle = (props) => <IconBase {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconBase>;
-        const Users = (props) => <IconBase {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
-        const Hand = (props) => <IconBase {...props}><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></IconBase>;
-        const Heart = (props) => <IconBase {...props}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></IconBase>;
-        const AlertTriangle = (props) => <IconBase {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
-        const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
-        const XCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconBase>;
-        const Car = (props) => <IconBase {...props}><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></IconBase>;
-        const Brain = (props) => <IconBase {...props}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></IconBase>;
-        const Volume2 = (props) => <IconBase {...props}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></IconBase>;
-        const Zap = (props) => <IconBase {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconBase>;
-        const Battery = (props) => <IconBase {...props}><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></IconBase>;
-        const Lightbulb = (props) => <IconBase {...props}><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 12 2a4.65 4.65 0 0 0-4.5 9.5c.76.76 1.23 1.52 1.41 2.5"/></IconBase>;
-        const BookOpen = (props) => <IconBase {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>;
-        const AlertCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>;
+        const Shield = (p) => <IconBase {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></IconBase>;
+        const MessageCircle = (p) => <IconBase {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconBase>;
+        const Users = (p) => <IconBase {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
+        const Hand = (p) => <IconBase {...p}><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></IconBase>;
+        const Heart = (p) => <IconBase {...p}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></IconBase>;
+        const AlertTriangle = (p) => <IconBase {...p}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
+        const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
+        const XCircle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconBase>;
+        const Car = (p) => <IconBase {...p}><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></IconBase>;
+        const Brain = (p) => <IconBase {...p}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></IconBase>;
+        const Volume2 = (p) => <IconBase {...p}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></IconBase>;
+        const Zap = (p) => <IconBase {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconBase>;
+        const Battery = (p) => <IconBase {...p}><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></IconBase>;
+        const Lightbulb = (p) => <IconBase {...p}><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 12 2a4.65 4.65 0 0 0-4.5 9.5c.76.76 1.23 1.52 1.41 2.5"/></IconBase>;
+        const BookOpen = (p) => <IconBase {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconBase>;
+        const AlertCircle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>;
+        const Play = (p) => <IconBase {...p}><polygon points="5 3 19 12 5 21 5 3" /></IconBase>;
+        const Video = (p) => <IconBase {...p}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></IconBase>;
+        const Activity = (p) => <IconBase {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></IconBase>;
 
-        // --- 主程式 App ---
+        // --- Video Quiz Data ---
+        const videoQuizQuestions = [
+            {
+                q: "根據衛教影片，ADHD 孩子常被貼上什麼樣的負面標籤？",
+                options: [
+                    { text: "調皮、搗蛋、不聽話", correct: true, feedback: "正確！許多人誤以為這是管教問題，其實是生理特質。" },
+                    { text: "天才、有創意、反應快", correct: false, feedback: "這是正面特質，但影片強調社會常給予負面標籤。" }
+                ]
+            },
+            {
+                q: "影片中提到，幫助 ADHD 孩子最重要的關鍵是？",
+                options: [
+                    { text: "給予更嚴厲的體罰與喝斥", correct: false, feedback: "錯誤！嚴厲喝斥往往只會增加孩子的挫折感。" },
+                    { text: "家長、學校與醫療體系的共同合作與理解", correct: true, feedback: "正確！多方配合與早期診斷才能有效幫助孩子。" }
+                ]
+            },
+            {
+                q: "ADHD 孩子在課業上常見的困難有哪些？",
+                options: [
+                    { text: "寫作業拖拉、容易粗心漏題、聯絡簿漏記", correct: true, feedback: "正確！這是注意力不足症狀的典型表現。" },
+                    { text: "單純不想唸書，故意跟老師對抗", correct: false, feedback: "錯誤！他們往往想做好，但受限於大腦功能而難以執行。" }
+                ]
+            }
+        ];
+
+        // --- Main App Component ---
         const App = () => {
+          const [mode, setMode] = useState('workshop'); // workshop, manual
           const [activeTab, setActiveTab] = useState('intro');
-          const [quizScore, setQuizScore] = useState(0);
-          const [showQuizResult, setShowQuizResult] = useState(false);
-          const [currentQuestion, setCurrentQuestion] = useState(0);
+          const [workshopStep, setWorkshopStep] = useState(0);
+          const [quizState, setQuizState] = useState({ score: 0, current: 0, showResult: false });
+          const [vQuizState, setVQuizState] = useState({ score: 0, current: 0, showResult: false });
 
-          // Data for Scenarios
+          // Handlers
+          const resetWorkshop = () => setWorkshopStep(0);
+          const resetManualQuiz = () => setQuizState({ score: 0, current: 0, showResult: false });
+          const resetVideoQuiz = () => setVQuizState({ score: 0, current: 0, showResult: false });
+
+          // Data from Scenarios
           const scenarios = [
             {
-              id: 'interrupt',
-              title: '情境一：處理插話或持續被打斷',
-              icon: <MessageCircle className="w-8 h-8 text-blue-500" />,
-              color: 'bg-blue-50 border-blue-200',
+              id: 'interrupt', title: '情境一：處理插話或持續被打斷', icon: <MessageCircle className="w-12 h-12 text-blue-500" />, color: 'bg-blue-50 border-blue-200',
               strategies: [
-                { title: '明確手勢', desc: '比出「暫停」手勢，不需要說話就能傳達訊號。', icon: <Hand className="w-5 h-5" /> },
-                { title: '溫和堅定', desc: '說：「我先講完這句，等一下換你。」給予明確等待指令。', icon: <Volume2 className="w-5 h-5" /> },
-                { title: '情緒控制', desc: '避免翻白眼或說「你很煩欸」，不需進行情緒否定。', icon: <Shield className="w-5 h-5" /> },
+                { title: '明確手勢', desc: '比出「暫停」手勢，不需要說話就能傳達訊號。', icon: <Hand className="w-6 h-6 text-blue-400" /> },
+                { title: '溫和堅定', desc: '說：「我先講完這句，等一下換你。」給予明確等待指令。', icon: <Volume2 className="w-6 h-6 text-blue-400" /> },
+                { title: '情緒控制', desc: '避免翻白眼或說「你很煩欸」，不需進行情緒否定。', icon: <Shield className="w-6 h-6 text-blue-400" /> },
               ]
             },
             {
-              id: 'physical',
-              title: '情境二：處理肢體接觸或動作過大',
-              icon: <AlertTriangle className="w-8 h-8 text-orange-500" />,
-              color: 'bg-orange-50 border-orange-200',
+              id: 'physical', title: '情境二：處理肢體接觸或動作過大', icon: <AlertTriangle className="w-12 h-12 text-orange-500" />, color: 'bg-orange-50 border-orange-200',
               strategies: [
-                { title: '內在調適', desc: '深呼吸，告訴自己：「他不是故意攻擊我」，這可能是生理特質。', icon: <Brain className="w-5 h-5" /> },
-                { title: '表達界線', desc: '嚴肅清楚地說：「你不小心撞到我了，我不喜歡這樣。」', icon: <Shield className="w-5 h-5" /> },
-                { title: '專注自身', desc: '專心做自己的事，不要模仿、起鬨或取綽號。', icon: <Users className="w-5 h-5" /> },
+                { title: '內在調適', desc: '深呼吸，提醒自己：「他不是故意攻擊我」，這可能是生理特質。', icon: <Brain className="w-6 h-6 text-orange-400" /> },
+                { title: '表達界線', desc: '嚴肅清楚地說：「你不小心撞到我了，我不喜歡這樣。」', icon: <Shield className="w-6 h-6 text-orange-400" /> },
+                { title: '專注自身', desc: '專心做自己的事，不要模仿、起鬨或取綽號。', icon: <Users className="w-6 h-6 text-orange-400" /> },
               ]
             },
             {
-              id: 'group',
-              title: '情境三：團體分組合作',
-              icon: <Users className="w-8 h-8 text-green-500" />,
-              color: 'bg-green-50 border-green-200',
+              id: 'group', title: '情境三：團體分組合作', icon: <Users className="w-12 h-12 text-green-500" />, color: 'bg-green-50 border-green-200',
               strategies: [
-                { title: '任務分配', desc: '善用精力，分配「短時間、高活動量」的任務（如跑腿、舉牌）。', icon: <CheckCircle className="w-5 h-5" /> },
-                { title: '正向選擇', desc: '想拒絕時，說：「我想跟○○一組」，而不是「我不要跟他一組」。', icon: <Heart className="w-5 h-5" /> },
-                { title: '好隊友思維', desc: '目標是順利完成任務，你們是「隊友」，不一定要強迫成為「密友」。', icon: <Users className="w-5 h-5" /> },
+                { title: '任務分配', desc: '善用精力，分配「短時間、高活動量」的任務（如跑腿、舉牌）。', icon: <CheckCircle className="w-6 h-6 text-green-400" /> },
+                { title: '正向選擇', desc: '想拒絕時，說：「我想跟○○一組」，而不是「我不要跟他一組」。', icon: <Heart className="w-6 h-6 text-green-400" /> },
+                { title: '好隊友思維', desc: '目標是順利完成任務，你們是「隊友」，不一定要強迫成為「密友」。', icon: <Users className="w-6 h-6 text-green-400" /> },
               ]
             }
           ];
 
-          // Data for Quiz
-          const quizQuestions = [
-            {
-              q: "當 ADHD 同學一直插嘴時，最好的回應是？",
-              options: [
-                { text: "大聲叫他閉嘴，說他很煩", correct: false, feedback: "這是情緒否定，可能會激化衝突。" },
-                { text: "比出暫停手勢，溫和地說「等我講完換你」", correct: true, feedback: "正確！明確的指令與界線最有幫助。" }
-              ]
-            },
-            {
-              q: "分組時不想跟某位同學一組，應該怎麼說？",
-              options: [
-                { text: "「我想跟小明一組」", correct: true, feedback: "正確！這是正向表達需求。" },
-                { text: "「我不要跟過動兒一組」", correct: false, feedback: "這是排擠與貼標籤的行為。" }
-              ]
-            },
-            {
-              q: "同學不小心撞到你，你應該？",
-              options: [
-                { text: "嚴肅告訴他：「你不小心撞到我，我不喜歡這樣」", correct: true, feedback: "正確！清楚表達感受與界線。" },
-                { text: "撞回去，讓他知道有多痛", correct: false, feedback: "這會變成肢體衝突，無助於解決問題。" }
-              ]
-            }
+          // Quiz Data for Manual
+          const manualQuizQuestions = [
+            { q: "當 ADHD 同學一直插嘴時，最好的回應是？", options: [{ text: "大聲叫他閉嘴，說他很煩", correct: false, feedback: "這是情緒否定。" }, { text: "比出暫停手勢，溫和地說「等我講完換你」", correct: true, feedback: "正確！明確的指令最有幫助。" }] },
+            { q: "分組時不想跟某位同學一組，應該怎麼說？", options: [{ text: "「我想跟小明一組」", correct: true, feedback: "正確！這是正向表達需求。" }, { text: "「我不要跟過動兒一組」", correct: false, feedback: "這是排擠行為。" }] },
+            { q: "同學不小心撞到你，你應該？", options: [{ text: "嚴肅告訴他：「你不小心撞到我，我不喜歡這樣」", correct: true, feedback: "正確！清楚表達感受。" }, { text: "撞回去，讓他知道有多痛", correct: false, feedback: "這會變成衝突。" }] }
           ];
 
-          const handleQuizAnswer = (isCorrect) => {
-            if (isCorrect) setQuizScore(prev => prev + 1);
-            if (currentQuestion < quizQuestions.length - 1) {
-              setTimeout(() => setCurrentQuestion(prev => prev + 1), 1000);
-            } else {
-              setTimeout(() => setShowQuizResult(true), 1000);
-            }
+          const handleManualQuiz = (correct) => {
+            if (!correct) return;
+            const next = quizState.current + 1;
+            if (next < manualQuizQuestions.length) setQuizState({...quizState, current: next});
+            else setQuizState({...quizState, showResult: true});
           };
 
-          const resetQuiz = () => {
-            setQuizScore(0);
-            setCurrentQuestion(0);
-            setShowQuizResult(false);
+          const handleVQuiz = (correct) => {
+            if (correct) setVQuizState(s => ({...s, score: s.score + 1}));
+            const next = vQuizState.current + 1;
+            if (next < videoQuizQuestions.length) setVQuizState(s => ({...s, current: next}));
+            else setVQuizState(s => ({...s, showResult: true}));
+          };
+
+          // --- UI SECTIONS ---
+          
+          const renderWorkshop = () => {
+            switch(workshopStep) {
+              case 0: return (
+                <div className="animate-fade-in flex flex-col items-center">
+                  <div className="bg-indigo-100 p-10 rounded-full mb-10"><Brain className="text-indigo-600" size={120} /></div>
+                  <h1 className="text-6xl font-black text-indigo-900 mb-8 text-center leading-tight">不一樣的大腦<br/>一樣的尊重</h1>
+                  <p className="text-3xl text-slate-600 mb-12 max-w-4xl text-center leading-relaxed">你知道嗎？有些人的大腦就像裝了法拉利的引擎，但只有腳踏車的煞車...</p>
+                  <button onClick={() => setWorkshopStep(1)} className="bg-indigo-600 hover:bg-indigo-700 text-white text-3xl font-bold py-6 px-16 rounded-3xl shadow-2xl transform transition hover:scale-105 active:scale-95 flex items-center gap-4">開始探索 <Play size={40} /></button>
+                </div>
+              );
+              case 1: return <StroopGame onNext={() => setWorkshopStep(2)} />;
+              case 2: return <CarMetaphor onNext={() => setWorkshopStep(3)} />;
+              case 3: return (
+                <div className="animate-fade-in text-center">
+                  <h2 className="text-5xl font-bold text-indigo-900 mb-10">準備好成為好隊友了嗎？</h2>
+                  <div className="flex gap-8 justify-center">
+                    <button onClick={() => { setMode('manual'); setActiveTab('intro'); }} className="bg-indigo-600 text-white text-2xl font-bold py-5 px-12 rounded-2xl shadow-lg">進入指南手冊</button>
+                    <button onClick={() => setWorkshopStep(0)} className="bg-slate-200 text-slate-600 text-2xl font-bold py-5 px-12 rounded-2xl shadow-lg">重看一次</button>
+                  </div>
+                </div>
+              );
+              default: return null;
+            }
           };
 
           return (
-            <div className="min-h-screen bg-gray-100 font-sans text-gray-800">
+            <div className="min-h-screen bg-gray-100 flex flex-col">
               {/* Header */}
-              <header className="bg-white shadow-md sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Heart className="text-red-500 w-8 h-8" />
+              <header className="bg-white shadow-lg sticky top-0 z-50">
+                <div className="w-full px-6 md:px-12 py-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-4 cursor-pointer" onClick={() => setMode('workshop')}>
+                    <Heart className="text-red-500 w-12 h-12" />
                     <div>
-                      <h1 className="text-xl font-bold text-gray-900">友善校園：相處指南</h1>
-                      <p className="text-xs text-gray-500">理性理解 • 設立界線 • 成為好隊友</p>
+                      <h1 className="text-3xl font-black text-gray-900 leading-tight tracking-tight">ADHD 友善學習入口</h1>
+                      <p className="text-lg text-gray-500 font-medium">互動探索 • 專業指南手冊</p>
                     </div>
                   </div>
-                  <nav className="hidden md:flex space-x-4">
-                    {['intro', 'adhd_info', 'scenarios', 'boundary', 'quiz'].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          activeTab === tab 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        {tab === 'intro' && '核心觀念'}
-                        {tab === 'adhd_info' && '認識 ADHD'}
-                        {tab === 'scenarios' && '情境對策'}
-                        {tab === 'boundary' && '界線 vs 霸凌'}
-                        {tab === 'quiz' && '小測驗'}
-                      </button>
-                    ))}
+                  <nav className="flex space-x-4">
+                    <button onClick={() => setMode('workshop')} className={`px-6 py-3 text-xl rounded-xl transition-all ${mode === 'workshop' ? 'bg-indigo-600 text-white font-bold shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>互動探索</button>
+                    <button onClick={() => setMode('manual')} className={`px-6 py-3 text-xl rounded-xl transition-all ${mode === 'manual' ? 'bg-indigo-600 text-white font-bold shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>指南手冊</button>
                   </nav>
-                </div>
-                {/* Mobile Nav */}
-                <div className="md:hidden flex overflow-x-auto px-4 py-2 space-x-2 scrollbar-hide">
-                     {['intro', 'adhd_info', 'scenarios', 'boundary', 'quiz'].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`flex-shrink-0 px-3 py-1 rounded-full text-sm whitespace-nowrap ${
-                          activeTab === tab 
-                            ? 'bg-blue-600 text-white' 
-                            : 'bg-white border border-gray-300 text-gray-600'
-                        }`}
-                      >
-                        {tab === 'intro' && '核心觀念'}
-                        {tab === 'adhd_info' && '認識 ADHD'}
-                        {tab === 'scenarios' && '情境對策'}
-                        {tab === 'boundary' && '界線 vs 霸凌'}
-                        {tab === 'quiz' && '小測驗'}
-                      </button>
-                    ))}
                 </div>
               </header>
 
-              <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-                
-                {/* TAB: INTRO */}
-                {activeTab === 'intro' && (
-                  <div className="space-y-6 animate-fade-in">
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border-l-4 border-blue-500">
-                      <h2 className="text-2xl font-bold mb-4 flex items-center">
-                        <Brain className="w-6 h-6 mr-2 text-blue-500" />
-                        為什麼需要這份指南？
-                      </h2>
-                      <p className="text-gray-600 leading-relaxed mb-4">
-                        這份教材不是要強迫你和每個人都成為好朋友，而是教導我們如何成為一個<b>「好隊友」</b>。
-                        面對同學的特殊行為，重點在於<b>「理性理解」</b>與設立<b>「人際界線」</b>。
-                      </p>
-                      <div className="bg-blue-50 p-4 rounded-xl">
-                        <h3 className="font-bold text-blue-800 mb-2">核心精神</h3>
-                        <ul className="list-disc list-inside space-y-2 text-blue-900">
-                          <li>非攻擊性的處理衝突</li>
-                          <li>保護自己不被打擾的權利</li>
-                          <li>給予明確但不帶情緒的指令</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-2xl p-6 shadow-sm">
-                      <h3 className="text-xl font-bold text-yellow-900 mb-4 flex items-center">
-                        <Car className="w-6 h-6 mr-2" />
-                        城市交通比喻
-                      </h3>
-                      <p className="text-yellow-900 mb-4 leading-relaxed">
-                        想像每個人在馬路上都開著不一樣的車。有些人的車煞車系統比較不一樣（像 ADHD 同學）。
-                        雖然我們不一定要邀請鄰居來家裡吃飯（成為密友），但我們必須遵守交通規則：
-                        <br/>
-                        <b>「不亂丟垃圾到別人家門口（不嘲笑），並保持安全距離（設界線）。」</b>
-                      </p>
-                    </div>
-                    
-                    <div className="text-center">
-                      <button 
-                        onClick={() => setActiveTab('scenarios')}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-full text-lg font-medium shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105"
-                      >
-                        開始學習情境對策 →
-                      </button>
-                    </div>
+              <main className="flex-1 w-full px-6 md:px-12 py-10">
+                {mode === 'workshop' ? (
+                  <div className="bg-white rounded-[3rem] shadow-2xl min-h-[70vh] flex flex-col items-center justify-center p-12 border-8 border-indigo-50">
+                    {renderWorkshop()}
                   </div>
-                )}
+                ) : (
+                  <div className="space-y-10 animate-fade-in">
+                    {/* Manual Tabs Header - Full Width Scrollable */}
+                    <div className="bg-white rounded-2xl shadow-md p-4 flex overflow-x-auto scrollbar-hide space-x-4">
+                      {[
+                        {id:'intro', label:'核心觀念'}, {id:'adhd_info', label:'認識 ADHD'}, 
+                        {id:'scenarios', label:'情境對策'}, {id:'boundary', label:'界線 vs 霸凌'}, 
+                        {id:'video_quiz', label:'影片測驗'}, {id:'quiz', label:'互動測驗'}
+                      ].map(t => (
+                        <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex-shrink-0 px-8 py-4 rounded-xl text-xl font-bold transition-all ${activeTab === t.id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'text-gray-600 hover:bg-gray-100'}`}>{t.label}</button>
+                      ))}
+                    </div>
 
-                {/* TAB: ADHD INFO */}
-                {activeTab === 'adhd_info' && (
-                  <div className="space-y-6 animate-fade-in">
-                     {/* Case Study Card */}
-                     <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 shadow-sm border border-purple-100">
-                        <h2 className="text-xl font-bold mb-3 flex items-center text-purple-800">
-                          <BookOpen className="w-6 h-6 mr-2" />
-                          案例故事：小花怎麼了？
-                        </h2>
-                        <div className="bg-white p-4 rounded-xl shadow-sm italic text-gray-600 text-sm leading-relaxed border-l-4 border-purple-400">
-                          <p className="mb-2">
-                            「媽媽騎機車載著小花出門，停紅燈時，小花看到馬路邊有昆蟲，一溜煙就跳下機車去看昆蟲，媽媽嚇壞了！直到媽媽大聲喝斥，小花才從昆蟲身上回過神來。」
-                          </p>
-                          <p>
-                            「還有一次，小花發脾氣時踢壞了陽台的玻璃門，弄得自己也受傷。學校也常打電話反映小花的狀況，媽媽覺得又氣又惱，卻也無能為力...」
-                          </p>
-                        </div>
-                        <p className="mt-3 text-sm text-purple-700">
-                          <AlertCircle className="w-4 h-4 inline mr-1"/>
-                          小花被診斷為 ADHD。她跳車的舉動，是因為注意力被吸引且無法控制衝動，這並不是故意要讓媽媽擔心。
-                        </p>
-                     </div>
-
-                     {/* 3 Main Symptoms Grid */}
-                     <h3 className="text-lg font-bold text-gray-800 px-2">ADHD 的三大症狀</h3>
-                     <div className="grid md:grid-cols-3 gap-4">
-                        {/* Symptom 1: Hyperactivity */}
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-red-400">
-                            <div className="flex items-center mb-2 text-red-500">
-                                <Battery className="w-5 h-5 mr-2" />
-                                <h4 className="font-bold">1. 過動</h4>
+                    {/* MANUAL CONTENT - Main Card */}
+                    <div className="bg-white rounded-[2.5rem] p-12 shadow-xl border border-gray-100">
+                      
+                      {activeTab === 'intro' && (
+                        <div className="space-y-12 animate-fade-in text-left">
+                          <div className="border-l-8 border-blue-500 pl-8">
+                            <h2 className="text-5xl font-black mb-8 flex items-center"><Brain className="w-12 h-12 mr-4 text-blue-500" />為什麼需要這份指南？</h2>
+                            <p className="text-3xl text-gray-600 leading-relaxed mb-10">這份教材不是要強迫你和每個人都成為好朋友，而是教導我們如何成為一個<b className="text-blue-700">「好隊友」</b>。面對同學的特殊行為，重點在於<b className="text-blue-700">「理性理解」</b>與設立<b className="text-blue-700">「人際界線」</b>。</p>
+                            <div className="bg-blue-50 p-10 rounded-3xl border-2 border-blue-100">
+                              <h3 className="text-3xl font-black text-blue-800 mb-6">核心精神</h3>
+                              <ul className="list-disc list-inside space-y-6 text-2xl text-blue-900">
+                                <li>非攻擊性的處理衝突</li>
+                                <li>保護自己不被打擾的權利</li>
+                                <li>給予明確但不帶情緒的指令</li>
+                              </ul>
                             </div>
-                            <p className="text-xs text-gray-500 mb-2 font-medium">靜不下來，動個不停</p>
-                            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                                <li>無法靜靜等待</li>
-                                <li>上課突然離席走動</li>
-                                <li>手中要玩小東西</li>
-                                <li>常蹦蹦跳跳而受傷</li>
-                            </ul>
-                        </div>
-
-                        {/* Symptom 2: Impulsivity */}
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-orange-400">
-                            <div className="flex items-center mb-2 text-orange-500">
-                                <Zap className="w-5 h-5 mr-2" />
-                                <h4 className="font-bold">2. 衝動</h4>
-                            </div>
-                            <p className="text-xs text-gray-500 mb-2 font-medium">跟隨慾望，不顧後果</p>
-                            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                                <li>愛插隊、插嘴</li>
-                                <li>要求未滿足就發脾氣</li>
-                                <li>干涉同學行為</li>
-                                <li>一言不合就動手</li>
-                            </ul>
-                        </div>
-
-                        {/* Symptom 3: Inattention */}
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border-t-4 border-blue-400">
-                            <div className="flex items-center mb-2 text-blue-500">
-                                <Volume2 className="w-5 h-5 mr-2" />
-                                <h4 className="font-bold">3. 注意力不足</h4>
-                            </div>
-                            <p className="text-xs text-gray-500 mb-2 font-medium">心思易被其他刺激吸引</p>
-                            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                                <li>聽不完別人的話</li>
-                                <li>東西丟三落四</li>
-                                <li>寫作業拖拉、粗心</li>
-                                <li>上課常沒在聽</li>
-                            </ul>
-                        </div>
-                     </div>
-
-                     {/* ADD Note & Labels */}
-                     <div className="grid md:grid-cols-2 gap-4">
-                         <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <h4 className="font-bold text-blue-800 text-sm mb-1 flex items-center">
-                                <Lightbulb className="w-4 h-4 mr-1"/> 小知識：什麼是 ADD？
-                            </h4>
-                            <p className="text-sm text-blue-700">
-                                若孩子<b>僅有</b>上述第 3 項「注意力不足」的症狀，而沒有過動或衝動的表現，則稱為 <b>ADD (注意力缺失症)</b>。
-                            </p>
-                         </div>
-
-                         <div className="bg-gray-100 p-4 rounded-xl border border-gray-200">
-                            <h4 className="font-bold text-gray-700 text-sm mb-1 flex items-center">
-                                <Shield className="w-4 h-4 mr-1"/> 撕下負面標籤
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                                ADHD 孩子常被貼上「調皮、搗蛋、故意」的標籤。這些標籤會讓他們受挫、缺乏成就感。理解這些是<b>症狀</b>而非故意，是成為好隊友的第一步。
-                            </p>
-                         </div>
-                     </div>
-                     
-                     <div className="text-center mt-6">
-                        <button 
-                          onClick={() => setActiveTab('scenarios')}
-                          className="text-purple-600 hover:text-purple-800 font-medium underline underline-offset-4"
-                        >
-                          理解了他們的困難，那該如何相處？ ➜
-                        </button>
-                     </div>
-                  </div>
-                )}
-
-                {/* TAB: SCENARIOS */}
-                {activeTab === 'scenarios' && (
-                  <div className="space-y-6 animate-fade-in">
-                    <h2 className="text-2xl font-bold text-center mb-6">點擊卡片查看應對策略</h2>
-                    <div className="grid md:grid-cols-3 gap-6">
-                      {scenarios.map((scenario) => (
-                        <div key={scenario.id} className={`bg-white rounded-2xl shadow-lg overflow-hidden border-t-4 ${scenario.color.replace('bg-', 'border-').split(' ')[1]}`}>
-                          <div className={`p-4 ${scenario.color}`}>
-                            <div className="flex justify-center mb-2">{scenario.icon}</div>
-                            <h3 className="text-lg font-bold text-center text-gray-800">{scenario.title}</h3>
                           </div>
-                          <div className="p-4 space-y-4">
-                            {scenario.strategies.map((strat, idx) => (
-                              <div key={idx} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                                <div className="mt-1 text-gray-400">{strat.icon}</div>
-                                <div>
-                                  <h4 className="font-bold text-sm text-gray-700">{strat.title}</h4>
-                                  <p className="text-sm text-gray-600">{strat.desc}</p>
-                                </div>
+                          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-[2rem] p-10 border-2 border-yellow-100 shadow-inner">
+                            <h3 className="text-4xl font-black text-yellow-900 mb-8 flex items-center"><Car className="w-12 h-12 mr-4 text-yellow-600" />城市交通比喻</h3>
+                            <p className="text-2xl text-yellow-900 leading-loose italic">想像每個人在馬路上都開著不一樣的車。有些人的車煞車系統比較不一樣（像 ADHD 同學）。雖然我們不一定要邀請鄰居來家裡吃飯（成為密友），但我們必須遵守交通規則：<br/><span className="font-black text-orange-600 not-italic text-3xl">「不亂丟垃圾到別人家門口（不嘲笑），並保持安全距離（設界線）。」</span></p>
+                          </div>
+                        </div>
+                      )}
+
+                      {activeTab === 'adhd_info' && (
+                        <div className="space-y-12 animate-fade-in text-left">
+                          <div className="bg-gradient-to-br from-purple-50 to-white rounded-[2.5rem] p-10 border-2 border-purple-100 shadow-lg">
+                            <h2 className="text-5xl font-black mb-8 flex items-center text-purple-800"><BookOpen className="w-12 h-12 mr-4 text-purple-600" />案例故事：小花怎麼了？</h2>
+                            <div className="bg-white p-8 rounded-3xl shadow-md italic text-2xl text-gray-600 leading-loose border-l-8 border-purple-400 mb-8">
+                              <p className="mb-6 font-medium">「媽媽騎機車載著小花出門，停紅燈時，小花看到馬路邊有昆蟲，一溜煙就跳下機車去看昆蟲，媽媽嚇壞了！直到媽媽大聲喝斥，小花才從昆蟲身上回過神來。」</p>
+                              <p className="font-medium">「還有一次，小花發脾氣時踢壞了陽台的玻璃門，弄得自己也受傷。學校也常打電話反映小花的狀況...」</p>
+                            </div>
+                            <p className="text-2xl text-purple-900 font-bold bg-purple-100 p-6 rounded-2xl inline-block">小花被診斷為 ADHD。她跳車的舉動，是因為注意力被吸引且無法控制衝動，這並不是故意要讓媽媽擔心。</p>
+                          </div>
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {[
+                              { title: '1. 過動', color: 'red', desc: '靜不下來，動個不停', items: ['無法靜靜等待', '上課突然離席', '蹦蹦跳跳受傷'], icon: <Battery className="w-8 h-8"/> },
+                              { title: '2. 衝動', color: 'orange', desc: '跟隨慾望，不顧後果', items: ['愛插嘴、插隊', '未滿足就暴怒', '一言不合就動手'], icon: <Zap className="w-8 h-8"/> },
+                              { title: '3. 注意力不足', color: 'blue', desc: '心思易被刺激吸引', items: ['聽不完別人的話', '東西丟三落四', '寫作業拖拉'], icon: <Volume2 className="w-8 h-8"/> }
+                            ].map(s => (
+                              <div key={s.title} className={`bg-${s.color}-50 p-10 rounded-[2rem] border-t-8 border-${s.color}-400 shadow-sm`}>
+                                <h4 className={`text-3xl font-black text-${s.color}-600 flex items-center gap-3 mb-4`}>{s.icon}{s.title}</h4>
+                                <p className="text-xl text-gray-500 mb-6 font-bold">{s.desc}</p>
+                                <ul className="text-2xl text-gray-700 space-y-4">
+                                  {s.items.map(i => <li key={i} className="flex items-center gap-2 font-medium"><span>•</span> {i}</li>)}
+                                </ul>
                               </div>
                             ))}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    
-                    <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 mt-8">
-                      <h3 className="font-bold text-indigo-900 mb-2 flex items-center">
-                        <Heart className="w-5 h-5 mr-2" />
-                        選擇性善意（非義務）
-                      </h3>
-                      <p className="text-indigo-800 text-sm mb-3">
-                        如果你願意多做一點（但不是必須的），你可以：
-                      </p>
-                      <div className="flex flex-wrap gap-3">
-                        <span className="bg-white text-indigo-600 px-3 py-1 rounded-full text-sm font-medium shadow-sm">提醒作業</span>
-                        <span className="bg-white text-indigo-600 px-3 py-1 rounded-full text-sm font-medium shadow-sm">幫忙重複老師指令</span>
-                        <span className="bg-white text-indigo-600 px-3 py-1 rounded-full text-sm font-medium shadow-sm">制止他人嘲笑</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                      )}
 
-                {/* TAB: BOUNDARY */}
-                {activeTab === 'boundary' && (
-                  <div className="space-y-6 animate-fade-in">
-                    <div className="bg-white rounded-2xl p-6 shadow-sm">
-                      <h2 className="text-2xl font-bold mb-6 text-center">界線 vs 霸凌：這兩者有什麼不同？</h2>
-                      
-                      <div className="grid md:grid-cols-2 gap-8">
-                        {/* Good Boundaries */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2 text-green-600 mb-2">
-                            <CheckCircle className="w-6 h-6" />
-                            <h3 className="text-xl font-bold">尊重的界線</h3>
-                          </div>
-                          <div className="bg-green-50 p-4 rounded-xl border border-green-100 h-full">
-                            <p className="font-bold mb-2">特徵：</p>
-                            <p className="text-gray-700 mb-4">溫和而堅定地說出你的「需求」，而不是攻擊他的人格。</p>
-                            <p className="font-bold mb-2">範例：</p>
-                            <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-green-400 italic text-gray-600">
-                              「你現在講話太大聲了，我正在看書，請你小聲一點。」
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Bullying */}
-                        <div className="space-y-4">
-                          <div className="flex items-center space-x-2 text-red-500 mb-2">
-                            <XCircle className="w-6 h-6" />
-                            <h3 className="text-xl font-bold">嘲笑與排擠</h3>
-                          </div>
-                          <div className="bg-red-50 p-4 rounded-xl border border-red-100 h-full">
-                            <p className="font-bold mb-2">特徵：</p>
-                            <p className="text-gray-700 mb-4">嘲笑、貼標籤、模仿、起鬨。這些會讓人受傷，也是學校禁止的。</p>
-                            <p className="font-bold mb-2">錯誤範例（禁止）：</p>
-                            <div className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-red-400 italic text-gray-600">
-                              「你好吵喔，有病喔！」<br/>
-                              「過動啦！又在發作。」
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center text-gray-500 text-sm">
-                        記住：你有權利選擇朋友，不一定要跟每個人都很要好，但必須遵守「不傷害、不嘲笑」的底線。
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* TAB: QUIZ */}
-                {activeTab === 'quiz' && (
-                  <div className="max-w-2xl mx-auto animate-fade-in">
-                    {!showQuizResult ? (
-                      <div className="bg-white rounded-2xl shadow-lg p-8">
-                        <div className="flex justify-between items-center mb-6">
-                          <span className="text-sm font-bold text-gray-400">題目 {currentQuestion + 1} / {quizQuestions.length}</span>
-                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">互動測驗</span>
-                        </div>
-                        
-                        <h3 className="text-xl font-bold text-gray-900 mb-8">{quizQuestions[currentQuestion].q}</h3>
-                        
-                        <div className="space-y-4">
-                          {quizQuestions[currentQuestion].options.map((opt, idx) => (
-                            <button
-                              key={idx}
-                              id={`opt-${idx}`}
-                              onClick={() => {
-                                if(opt.correct) {
-                                    handleQuizAnswer(true);
-                                } else {
-                                    alert(opt.feedback); 
-                                }
-                              }}
-                              className="w-full text-left p-4 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50 transition-all group"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>{opt.text}</span>
-                                <span className="opacity-0 group-hover:opacity-100 text-blue-500">➜</span>
+                      {activeTab === 'scenarios' && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 animate-fade-in">
+                          {scenarios.map(s => (
+                            <div key={s.id} className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+                              <div className={`p-10 ${s.color} flex flex-col items-center border-b-2 border-gray-100`}><div className="mb-6 drop-shadow-sm">{s.icon}</div><h3 className="font-black text-2xl text-center text-gray-800">{s.title}</h3></div>
+                              <div className="p-10 space-y-10 flex-1">
+                                {s.strategies.map((st, i) => (
+                                  <div key={i} className="flex gap-6 text-left items-start">
+                                    <div className="mt-1 p-2 bg-slate-50 rounded-lg">{st.icon}</div>
+                                    <div>
+                                      <div className="text-2xl font-black text-gray-800 mb-2">{st.title}</div>
+                                      <div className="text-xl text-gray-500 leading-relaxed font-medium">{st.desc}</div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-                        <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <Shield className="w-10 h-10 text-yellow-500" />
+                      )}
+
+                      {activeTab === 'boundary' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-fade-in text-left">
+                          <div className="bg-green-50 p-12 rounded-[2.5rem] border-4 border-green-200 shadow-lg">
+                            <h3 className="text-green-700 font-black text-4xl flex items-center mb-10"><CheckCircle className="mr-4 w-10 h-10" /> 尊重的界線</h3>
+                            <p className="text-2xl text-green-900 mb-8 leading-relaxed font-medium">目標是<span className="font-black underline decoration-green-300">「表達需求」</span>而非攻擊他人格。</p>
+                            <div className="bg-white p-8 rounded-3xl shadow-inner italic text-2xl font-bold text-gray-700 leading-loose border-l-8 border-green-400">「你現在講話太大聲了，我正在看書，請你小聲一點。」</div>
+                          </div>
+                          <div className="bg-red-50 p-12 rounded-[2.5rem] border-4 border-red-200 shadow-lg">
+                            <h3 className="text-red-700 font-black text-4xl flex items-center mb-10"><XCircle className="mr-4 w-10 h-10" /> 嘲笑與排擠</h3>
+                            <p className="text-2xl text-red-900 mb-8 leading-relaxed font-medium">禁止貼標籤、模仿、起鬨或人身攻擊。</p>
+                            <div className="bg-white p-8 rounded-3xl shadow-inner italic text-2xl font-bold text-red-500 leading-loose border-l-8 border-red-400">「你好吵喔，有病喔！」<br/>「過動啦！又在發作。」</div>
+                          </div>
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">測驗完成！</h2>
-                        <p className="text-gray-600 mb-6">你已經掌握了成為「好隊友」的關鍵技巧。</p>
-                        <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
-                          <h4 className="font-bold text-gray-700 mb-2">重點回顧：</h4>
-                          <ul className="text-sm text-gray-600 space-y-2">
-                            <li>✓ 遇到打斷：溫和堅定給指令</li>
-                            <li>✓ 遇到碰撞：清楚表達界線不針對人</li>
-                            <li>✓ 團體分組：善用特質分配任務</li>
-                          </ul>
+                      )}
+
+                      {activeTab === 'video_quiz' && (
+                        <div className="animate-fade-in space-y-12 max-w-6xl mx-auto">
+                           <div className="bg-slate-800 p-8 rounded-3xl text-white flex items-center justify-between shadow-2xl">
+                              <div className="flex items-center gap-6"><Video size={48} className="text-red-400" /> <span className="text-3xl font-black">衛教影片重點挑戰</span></div>
+                              <span className="text-xl text-slate-400 bg-slate-700 px-6 py-2 rounded-full font-bold">精華單元</span>
+                           </div>
+                           {!vQuizState.showResult ? (
+                             <div className="text-left space-y-12 p-4">
+                               <h3 className="text-4xl font-black text-slate-800 leading-snug">Q: {videoQuizQuestions[vQuizState.current].q}</h3>
+                               <div className="grid gap-6">
+                                  {videoQuizQuestions[vQuizState.current].options.map((opt, i) => (
+                                    <button key={i} onClick={() => handleVQuiz(opt.correct)} className="w-full text-left p-10 rounded-[2rem] border-4 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 hover:shadow-xl transition-all text-2xl font-bold group flex justify-between items-center">
+                                      <span>{opt.text}</span>
+                                      <span className="opacity-0 group-hover:opacity-100 text-indigo-500">➜</span>
+                                    </button>
+                                  ))}
+                               </div>
+                             </div>
+                           ) : (
+                             <div className="text-center p-16">
+                               <div className="text-9xl mb-10 animate-bounce">🏆</div>
+                               <h2 className="text-5xl font-black mb-6 text-indigo-900">影片單元測驗完成！</h2>
+                               <p className="text-3xl text-slate-600 mb-12">你答對了 {vQuizState.score} 題！早期診斷與社會理解是幫助他們的關鍵。</p>
+                               <button onClick={resetVideoQuiz} className="bg-indigo-600 text-white text-3xl font-bold px-20 py-6 rounded-3xl shadow-xl transform transition hover:scale-105">重新挑戰</button>
+                             </div>
+                           )}
                         </div>
-                        <button 
-                          onClick={resetQuiz}
-                          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                        >
-                          再測一次
-                        </button>
-                      </div>
-                    )}
+                      )}
+
+                      {activeTab === 'quiz' && (
+                        <div className="animate-fade-in text-center py-16">
+                          {!quizState.showResult ? (
+                            <div className="space-y-12 text-left max-w-4xl mx-auto p-4">
+                              <h3 className="text-4xl font-black leading-tight border-b-8 border-blue-100 pb-8 mb-10">{manualQuizQuestions[quizState.current].q}</h3>
+                              <div className="grid gap-8">
+                                {manualQuizQuestions[quizState.current].options.map((opt, i) => (
+                                  <button key={i} onClick={() => { if(!opt.correct) alert(opt.feedback); else handleManualQuiz(true); }} className="p-10 rounded-[2.5rem] border-4 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-2xl font-bold text-left shadow-sm">
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-black">{i === 0 ? 'A' : 'B'}</div>
+                                      {opt.text}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center space-y-10">
+                               <Shield className="mx-auto text-yellow-500 w-40 h-40 animate-pulse" />
+                               <h2 className="text-6xl font-black text-gray-900">恭喜通過互動測驗！</h2>
+                               <p className="text-3xl text-slate-500">你已經完全掌握了成為「好隊友」的溝通心法。</p>
+                               <button onClick={resetManualQuiz} className="bg-blue-600 text-white text-3xl font-bold px-16 py-6 rounded-3xl shadow-2xl">再次練習</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
                   </div>
                 )}
-
               </main>
 
-              <footer className="bg-gray-800 text-gray-300 py-8 mt-12">
-                <div className="max-w-4xl mx-auto px-4 text-center">
-                  <p className="mb-2">宣導教材互動網頁版</p>
-                  <p className="text-sm text-gray-500">基於「理性理解」與「人際界線」的友善校園指引</p>
-                </div>
+              <footer className="bg-gray-800 text-gray-400 py-10 text-center border-t-4 border-gray-700">
+                <p class="text-xl font-bold mb-2">© ADHD 友善校園宣導版互動網頁</p>
+                <p class="text-lg">理性理解生理特質 • 溫和堅定設立界線 • 守護友善校園底線</p>
               </footer>
             </div>
           );
         };
+
+        // --- Sub-Components (Interactive Sections) ---
+
+        const StroopGame = ({ onNext }) => {
+          const [gameState, setGameState] = useState('intro');
+          const [round, setRound] = useState(0);
+          const [challenge, setChallenge] = useState({ text: '', color: '', colorClass: '' });
+          const colors = [
+            { name: '紅', class: 'text-red-500', value: 'red' }, { name: '藍', class: 'text-blue-500', value: 'blue' },
+            { name: '綠', class: 'text-green-500', value: 'green' }, { name: '黃', class: 'text-yellow-500', value: 'yellow' }
+          ];
+
+          const generate = () => {
+            const tIdx = Math.floor(Math.random() * colors.length);
+            let cIdx = Math.floor(Math.random() * colors.length);
+            while (cIdx === tIdx) cIdx = Math.floor(Math.random() * colors.length);
+            setChallenge({ text: colors[tIdx].name, color: colors[cIdx].value, colorClass: colors[cIdx].class });
+          };
+
+          const handle = (val) => {
+            if (round >= 4) setGameState('result');
+            else { setRound(r => r + 1); generate(); }
+          };
+
+          if (gameState === 'intro') return (
+            <div className="text-center">
+              <p className="mb-12 text-4xl leading-relaxed text-gray-700 font-bold">ADHD 孩子常感到「腦袋煞不住」。<br/><span className="text-red-500 underline decoration-8 underline-offset-8">請選出「字的顏色」</span>，不要管字寫什麼！</p>
+              <button onClick={() => { setGameState('playing'); generate(); }} className="bg-orange-500 hover:bg-orange-600 text-white py-6 px-20 rounded-3xl text-3xl font-black shadow-xl">開始挑戰</button>
+            </div>
+          );
+          if (gameState === 'playing') return (
+            <div className="text-center w-full max-w-4xl mx-auto">
+              <div className={`text-[12rem] font-black mb-16 animate-bounce-in drop-shadow-lg ${challenge.colorClass}`}>{challenge.text}</div>
+              <div className="grid grid-cols-2 gap-8">
+                {colors.map(c => <button key={c.value} onClick={() => handle(c.value)} className="bg-white border-4 border-slate-200 py-10 rounded-[2rem] text-4xl font-black text-gray-800 hover:border-indigo-500 hover:bg-indigo-50 transition-all shadow-md">{c.name}色</button>)}
+              </div>
+            </div>
+          );
+          return (
+            <div className="text-left bg-indigo-50 p-16 rounded-[3rem] border-4 border-indigo-100 shadow-inner max-w-5xl">
+              <h3 className="text-5xl font-black mb-8 text-indigo-900">腦袋卡住了嗎？</h3>
+              <p className="mb-10 text-3xl leading-loose text-indigo-800 font-medium">明明知道要選顏色，但手指卻很想選那個字。這種<span className="bg-yellow-200 px-4">「想要煞車卻煞不住」</span>的衝突感，就是 ADHD 同學在生活中常面臨的生理衝動。這並非故意的，而是他們大腦的煞車皮真的比較薄。</p>
+              <button onClick={onNext} className="bg-indigo-600 text-white text-3xl font-bold py-5 px-12 rounded-2xl shadow-lg">進入下一步</button>
+            </div>
+          );
+        };
+
+        const CarMetaphor = ({ onNext }) => (
+          <div className="animate-fade-in flex flex-col items-center w-full">
+            <h2 className="text-6xl font-black text-indigo-900 mb-16">大腦的法拉利引擎</h2>
+            <div className="flex flex-col lg:flex-row gap-16 items-center justify-center w-full mb-16 px-4">
+              <div className="bg-white p-12 rounded-[3rem] shadow-2xl border-b-[12px] border-red-500 w-full lg:w-96 text-center transform transition hover:scale-105">
+                <div className="bg-red-100 p-8 rounded-full mb-8 inline-block shadow-sm"><Zap className="text-red-600" size={80} /></div>
+                <h3 className="text-4xl font-black mb-4 text-gray-800">法拉利引擎</h3>
+                <p className="text-2xl text-slate-600 leading-relaxed font-bold">反應極快、靈感豐沛。<br/>像頂級賽車能量十足。</p>
+              </div>
+              <div className="text-6xl text-slate-300 font-black animate-pulse hidden lg:block">+</div>
+              <div className="bg-white p-12 rounded-[3rem] shadow-2xl border-b-[12px] border-blue-500 w-full lg:w-96 text-center transform transition hover:scale-105">
+                <div className="bg-blue-100 p-8 rounded-full mb-8 inline-block shadow-sm"><Activity className="text-blue-600" size={80} /></div>
+                <h3 className="text-4xl font-black mb-4 text-gray-800">腳踏車煞車</h3>
+                <p className="text-2xl text-slate-600 leading-relaxed font-bold">衝動控制發育較慢。<br/>想停下時煞車皮不夠力。</p>
+              </div>
+            </div>
+            <div className="bg-slate-50 p-10 rounded-[2.5rem] text-left max-w-6xl w-full mb-12 shadow-inner border-2 border-slate-100">
+              <ul className="space-y-6 text-3xl">
+                <li className="flex items-center gap-6"><span className="text-4xl">⚡</span> <span className="font-medium text-gray-700"><b>愛插嘴</b>：大腦太興奮轉太快，怕漏掉靈感急著出口。</span></li>
+                <li className="flex items-center gap-6"><span className="text-4xl">⚡</span> <span className="font-medium text-gray-700"><b>坐不住</b>：身體需要動來動去，幫助大腦保持開機清醒。</span></li>
+              </ul>
+            </div>
+            <button onClick={onNext} className="bg-indigo-600 text-white text-3xl font-bold py-6 px-16 rounded-3xl shadow-2xl hover:bg-indigo-700 transform transition hover:scale-105">我想學習具體相處方法</button>
+          </div>
+        );
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
